@@ -1,57 +1,97 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import "./App.css";
+import AddTodo from "./view/todo/AddTodo";
+import TodoList from "./view/todo/TodoList";
+import todoData from "./db/todo.json";
+import EditTodo from "./view/todo/EditTodo";
 
 function App() {
+  const [todos, setTodos] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+
+  const handleOpen = (id) => {
+    const taskToEdit = [...todos].find((x) => x.id === id);
+    setTaskToEdit(taskToEdit);
+    setOpen(true);
+  };
+
+  const handleClose = () => setOpen(false);
+
+  useEffect(() => {
+    let localTodos = localStorage.getItem("todos");
+    localTodos = JSON.parse(localTodos);
+    if (localTodos === null || localTodos.length === 0) {
+      localTodos = todoData;
+      localStorage.setItem("todos", JSON.stringify(todoData));
+    }
+    setTodos(localTodos);
+  }, []);
+
+  const handleAddNewItem = (desc) => {
+    const newTodos = [...todos];
+    newTodos.push({
+      id: Math.floor(Math.random() * 100 + 1),
+      description: desc,
+      isCompleted: false,
+      isDeleted: false,
+    });
+    setTodos(newTodos);
+    localStorage.setItem("todos", JSON.stringify(newTodos));
+  };
+
+  const handleUpdateStatus = (id) => {
+    const newTodos = [...todos];
+    const todoToUpdate = newTodos.find((x) => x.id === id);
+    todoToUpdate.isCompleted = !todoToUpdate.isCompleted;
+    setTodos(newTodos);
+    localStorage.setItem("todos", JSON.stringify(newTodos));
+  };
+
+  const handleDeleteTask = (id) => {
+    const newTodos = [...todos];
+    const todoToUpdate = newTodos.find((x) => x.id === id);
+    todoToUpdate.isDeleted = true;
+    setTodos(newTodos);
+    localStorage.setItem("todos", JSON.stringify(newTodos));
+  };
+
+  const handleEdit = (desc) => {
+    const newTodos = [...todos];
+    const todoToUpdate = newTodos.find((x) => x.id === taskToEdit.id);
+    todoToUpdate.description = desc;
+    setTodos(newTodos);
+    handleClose();
+    localStorage.setItem("todos", JSON.stringify(newTodos));
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
-    </div>
+    <>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexDirection: "column",
+        }}
+      >
+        <p>TODO APP</p>
+        <AddTodo onAddItem={handleAddNewItem} />
+        <TodoList
+          todos={todos.filter((x) => x.isDeleted === false)}
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteTask={handleDeleteTask}
+          onOpen={handleOpen}
+        />
+        {taskToEdit && open && (
+          <EditTodo
+            open={open}
+            onClose={handleClose}
+            task={taskToEdit}
+            onEdit={handleEdit}
+          />
+        )}
+      </div>
+    </>
   );
 }
 
